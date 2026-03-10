@@ -41,7 +41,7 @@ export const teamSync = async (
     (x) => x.field[0] === "team" && x.operator === "eq",
   );
 
-  if (!match || !match.value) {
+  if (!match) {
     throw Error(
       "Query is only allowed to make use of only a single team subset",
     );
@@ -49,29 +49,27 @@ export const teamSync = async (
 
   const result = await api.GET["api/sync/:team"](match.value);
 
-  console.log(result.members);
-
-  setMany(
+  await setMany(
     result.members.map((x) => [x.id, x]),
     stores.members,
   );
 
-  setMany(
+  await setMany(
     result.categories.map((x) => [x.id, x]),
     stores.categories,
   );
 
-  setMany(
+  await setMany(
     result.status.map((x) => [x.id, x]),
     stores.status,
   );
 
-  setMany(
+  await setMany(
     result.tasks.map((x) => [x.id, x]),
     stores.tasks,
   );
 
-  setMany(
+  await setMany(
     result.projects.map((x) => [x.id, x]),
     stores.projects,
   );

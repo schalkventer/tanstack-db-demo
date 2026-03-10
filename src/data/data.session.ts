@@ -26,7 +26,7 @@ export const login = async (credentials: {
 
   store.set(atom, {
     member: response.user,
-    team: response.team,
+    team: null,
   });
 
   return true;
