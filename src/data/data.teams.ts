@@ -6,6 +6,7 @@ import { queryClient, queryKey, getTeams, stores } from "./data.helpers";
 import { v4 as createId } from "uuid";
 import { getDefaultStore } from "jotai";
 import { atom } from "./data.session";
+import { del, set, values } from "idb-keyval";
 
 const createTeams = () => {
   let pushing: number = 0;
@@ -25,12 +26,8 @@ const createTeams = () => {
         pushing += 1;
 
         const promises = transaction.mutations.map(async (x) => {
-          const { id } = x.original;
-          await api.DELETE["api/teams/:id"](id);
-
-          stores.teams.mutate((x) => {
-            return x.filter((item) => item.id !== id);
-          });
+          await api.DELETE["api/teams/:id"](x.original.id);
+          await del(x.original.id, stores.teams);
         });
 
         await Promise.all(promises);
@@ -53,9 +50,7 @@ const createTeams = () => {
             updated: real.updated,
           });
 
-          stores.teams.mutate((x) => {
-            x.push(real);
-          });
+          await set(real.id, real, stores.teams);
         });
 
         await Promise.all(promises);
@@ -77,10 +72,7 @@ const createTeams = () => {
             updated: real.updated,
           });
 
-          stores.teams.mutate((x) => {
-            const index = x.findIndex((item) => item.id === real.id);
-            x[index] = real;
-          });
+          await set(x.original.id, real, stores.teams);
         });
 
         await Promise.all(promises);
@@ -90,14 +82,15 @@ const createTeams = () => {
   );
 
   if (collection.size === 0) {
-    const local = stores.teams.get();
-    collection.preload();
+    values(stores.teams).then((x) => {
+      collection.preload();
 
-    local.forEach((item) => {
-      collection.utils.writeInsert(item);
+      x.forEach((item) => {
+        collection.utils.writeInsert(item);
+      });
+
+      collection.startSyncImmediate();
     });
-
-    collection.startSyncImmediate();
   }
 
   return {
